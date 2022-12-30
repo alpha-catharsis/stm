@@ -36,13 +36,13 @@ public export
 Enumerable 4 Sem where
   enumerated = [Green, Yellow, Red, Black]
 
-  enumerated_all = Compl $ \case
+  enumeratedAll = Compl $ \case
     Green => Here
     Yellow => There Here
     Red => There (There Here)
     Black => There (There (There Here))
 
-  enumerated_unique = NoDupCons Green _ (\case
+  enumeratedUnique = NoDupCons Green _ (\case
       Here impossible
       There later => case later of
         Here impossible
@@ -77,12 +77,12 @@ public export
 Enumerable 3 Ev where
   enumerated = [Stop, Next, Fail]
 
-  enumerated_all = Compl $ \case
+  enumeratedAll = Compl $ \case
     Stop => Here
     Next => There Here
     Fail => There (There Here)
 
-  enumerated_unique = NoDupCons Stop _ (\case
+  enumeratedUnique = NoDupCons Stop _ (\case
         Here impossible
         There later => case later of
           Here impossible
@@ -113,11 +113,11 @@ data SemTrans : Trans Sem Ev where
 
 public export
 Stm Sem Ev SemTrans where
-  trans_funct GreenStop GreenStop = Refl
-  trans_funct GreenNext GreenNext = Refl
-  trans_funct GreenFail GreenFail = Refl
-  trans_funct YellowNext YellowNext = Refl
-  trans_funct YellowFail YellowFail = Refl
-  trans_funct RedStop RedStop = Refl
-  trans_funct RedNext RedNext = Refl
-  trans_funct RedFail RedFail = Refl
+  transFunct GreenStop GreenStop = Refl
+  transFunct GreenNext GreenNext = Refl
+  transFunct GreenFail GreenFail = Refl
+  transFunct YellowNext YellowNext = Refl
+  transFunct YellowFail YellowFail = Refl
+  transFunct RedStop RedStop = Refl
+  transFunct RedNext RedNext = Refl
+  transFunct RedFail RedFail = Refl

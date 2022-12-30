@@ -25,5 +25,17 @@ import Stm.Data.Vect.NoDup
 public export
 interface Enumerable (0 k : Nat) (0 t : Type) where
   enumerated : Vect k t
-  enumerated_all : Complete enumerated
-  enumerated_unique : NoDup enumerated
+  enumeratedAll : Complete enumerated
+  enumeratedUnique : NoDup enumerated
+
+-----------------------
+-- Enumerable functions
+-----------------------
+
+export
+finToEnum : Enumerable k e => Fin k -> e
+finToEnum idx = index idx enumerated
+
+export
+enumToFin : Enumerable k e => e -> Fin k
+enumToFin x = completeIdx enumeratedAll x
