@@ -1,0 +1,10 @@
+package stm
+
+authors = "Alpha Catharsis"
+modules = Stm
+
+main = Main
+
+executable = "stm"
+opts = "--total --Werror"
+sourcedir = "src"
