@@ -5,12 +5,18 @@
 module Stm.Data.Path.Ops
 
 -------------------
+-- External imports
+-------------------
+
+import Data.DPair
+import Data.Nat
+
+-------------------
 -- Internal imports
 -------------------
 
 import Stm.Data.Step.Step
 import Stm.Data.Stm.Stm
-import Stm.Data.Path.CmplxPath
 import Stm.Data.Path.Elem
 import Stm.Data.Path.Path
 
@@ -19,32 +25,67 @@ import Stm.Data.Path.Path
 ---------------
 
 export
-pathJoin : Path tr s1 s2 -> Path tr s2 s3 -> Path tr s1 s3
-pathJoin pt12 (PathSingl _ stp23) = PathNext pt12 stp23
-pathJoin pt12 (PathNext pt24 stp43) = PathNext (pathJoin pt12 pt24) stp43
+join : Path tr k s1 s2 -> Path tr k' s2 s3 -> Path tr (k + k') s1 s3
+join pt12 (PathSingl _ stp23) = rewrite plusCommutative k 1 in
+                                rewrite plusOneSucc k in PathNext pt12 stp23
+join pt12 (PathNext pt24 stp43 {k=j}) = rewrite sym (plusSuccRightSucc k j)
+                                        in PathNext (join pt12 pt24) stp43
+
+-----------------
+-- Path splitting
+-----------------
+
+export
+splitUpTo : {0 s : Type} -> {0 e : Type} -> {0 tr : Trans s e} ->
+            {0 s1 : s} -> {0 s3 : s} ->
+            (pt : Path tr k s1 s3) -> (s2 : s) -> (Elem s2 pt) ->
+            Maybe (Exists (\k' => Path tr k' s1 s2))
+splitUpTo (PathSingl s1 _) s1 InSingl1 = Nothing
+splitUpTo (PathSingl s1 (MkStep tr _ ev s2 trPrf)) s2 InSingl2 =
+  Just (Evidence _ (PathSingl s1 (MkStep tr s1 ev s2 trPrf)))
+splitUpTo (PathNext pt14 (MkStep tr s4 ev s2 trPrf)) s2 InNext =
+  Just (Evidence _ (PathNext pt14 (MkStep tr s4 ev s2 trPrf)))
+splitUpTo (PathNext pt14 stp43) s2 (InPrev elemPrf) =
+  splitUpTo pt14 s2 elemPrf
+
+-----------------
+-- Path extension
+-----------------
+
+export
+extendStart : Path tr k s2 s3 -> (s1 : s) -> Step tr s1 s2 ->
+              Path tr (S k) s1 s3
+extendStart pt23 s1 stp12 = join (PathSingl s1 stp12) pt23
+
+export
+extendEnd : Path tr k s1 s2 -> Step tr s2 s3 -> Path tr (S k) s1 s3
+extendEnd pt12 stp23 = PathNext pt12 stp23
 
 -----------------
 -- Path reduction
 -----------------
 
 export
-pathRetractStart : (pt13 : Path tr s1 s3) -> (0 cprf : CmplxPath pt13) ->
-                     (s2 ** Path tr s2 s3)
-pathRetractStart (PathSingl _ _) (CmplxPath _) impossible
-pathRetractStart (PathNext (PathSingl s1 stp12) stp23) _ =
-  let (s2 ** Refl) = stepEnd stp12 in (s2 ** PathSingl s2 stp23)
-pathRetractStart (PathNext (PathNext pt14 stp42) stp23) _ =
-  let (s5 ** pt52) = pathRetractStart
-                     (assert_smaller (PathNext (PathNext pt14 stp42) stp23)
-                                     (PathNext pt14 stp42))
-                     (MkCmplxPath pt14 stp42)
-  in (s5 ** PathNext pt52 stp23)
+reduceStart : (pt13 : Path tr (S (S k)) s1 s3) ->
+              Exists (\s2 => Path tr (S k) s2 s3)
+reduceStart (PathSingl _ _) impossible
+reduceStart (PathNext (PathSingl s1 stp12) stp23) =
+  let Element s2' prf = end stp12
+  in Evidence s2' (PathSingl s2' (rewrite prf in stp23))
+reduceStart (PathNext (PathNext (PathSingl s1 stp14) stp42) stp23) =
+  let Element s4 prf = end stp14
+  in  Evidence s4 (PathNext (PathSingl s4 (rewrite prf in stp42)) stp23)
+reduceStart (PathNext (PathNext (PathNext pt15 stp54) stp42) stp23) =
+  let Evidence s6 pt62 = reduceStart (PathNext (PathNext pt15 stp54) stp42)
+  in Evidence s6 (PathNext pt62 stp23)
 
 export
-patRetractEnd : (pt13 : Path tr s1 s3) -> CmplxPath pt13 ->
-                   (s2 ** Path tr s1 s2)
-patRetractEnd (PathSingl _ _) (CmplxPath _) impossible
-patRetractEnd (PathNext (PathSingl s1 stp12) stp23) _ =
-  let (s2 ** Refl) = stepEnd stp12 in (s2 ** PathSingl s1 stp12)
-patRetractEnd (PathNext (PathNext pt14 stp42) stp23) _ =
-  let (s2 ** Refl) = stepEnd stp42 in (s2 ** PathNext pt14 stp42)
+reduceEnd : (pt13 : Path tr (S (S k)) s1 s3) ->
+            Exists (\s2 => Path tr (S k) s1 s2)
+reduceEnd (PathSingl _ _) impossible
+reduceEnd (PathNext (PathSingl s1 stp12) stp23) =
+  let Element s2 prf = end stp12
+  in Evidence s2 (PathSingl s1 (rewrite prf in stp12))
+reduceEnd (PathNext (PathNext pt14 stp42) stp23) =
+  let Element s2 prf = end stp42
+  in Evidence s2 (PathNext pt14 (rewrite prf in stp42))
