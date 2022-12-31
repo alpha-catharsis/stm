@@ -48,6 +48,24 @@ splitUpTo (PathNext pt14 (MkStep tr s4 ev s2 trPrf)) s2 InNext =
 splitUpTo (PathNext pt14 stp43) s2 (InPrev elemPrf) =
   splitUpTo pt14 s2 elemPrf
 
+export
+splitFromOn : {0 s : Type} -> {0 e : Type} -> {0 tr : Trans s e} ->
+              {0 s1 : s} -> {0 s3 : s} ->
+              (pt : Path tr k s1 s3) -> (s2 : s) -> (Elem s2 pt) ->
+              Maybe (Exists (\k' => Path tr k' s2 s3))
+splitFromOn (PathSingl s1 stp13) s1 InSingl1 =
+  Just (Evidence _ (PathSingl s1 stp13))
+splitFromOn (PathSingl _ (MkStep _ _ _ s2 _)) s2 InSingl2 = Nothing
+splitFromOn (PathNext _ (MkStep _ _ _ s2 _)) s2 InNext = Nothing
+splitFromOn (PathNext (PathSingl s1 (MkStep tr s1 ev s2 trPrf)) stp23) s2
+            (InPrev InSingl2) = Just (Evidence _ (PathSingl s2 stp23))
+splitFromOn (PathNext (PathNext pt14 (MkStep tr s4 ev s2 trPrf)) stp23) s2
+            (InPrev InNext) = Just (Evidence _ (PathSingl s2 stp23))
+splitFromOn (PathNext pt14 stp43) s2 (InPrev elemPrf) =
+  case splitFromOn pt14 s2 elemPrf of
+    Nothing => Nothing
+    Just (Evidence k pt24) => Just (Evidence (S k) (PathNext pt24 stp43))
+
 -----------------
 -- Path extension
 -----------------
